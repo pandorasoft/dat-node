@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "deps": "dependency-check . && dependency-check . --extra --no-dev",
-    "test": "standard && npm run deps && nyc tape test/*.js",
+    "test": "standard --fix && npm run deps && tape test/download.js",
+    "test2": "tape test/download.js",
     "coverage": "nyc report --reporter=text-lcov > coverage.lcov"
   },
   "repository": {
@@ -27,7 +28,7 @@
     "hyperdrive-http": "^4.4.0",
     "hyperdrive-network-speed": "^2.1.0",
     "hyperswarm": "^2.8.0",
-    "mirror-folder": "^3.0.0",
+    "mirror-folder": "git+https://github.com/pandorasoft/mirror-folder.git",
     "pump": "^3.0.0",
     "random-access-file": "^2.1.2",
     "random-access-memory": "^3.1.1",

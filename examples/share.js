@@ -1,16 +1,16 @@
-var path = require('path')
-var Dat = require('..')
+const path = require('path')
+const Dat = require('..')
 
-var src = path.join(__dirname, '..')
+const src = path.join(__dirname, '..')
 
 Dat(src, { temp: true }, function (err, dat) {
   if (err) throw err
 
-  var network = dat.joinNetwork()
+  const network = dat.joinNetwork()
   network.once('connection', function () {
     console.log('Connected')
   })
-  var progress = dat.importFiles(src, {
+  const progress = dat.importFiles(src, {
     ignore: ['**/dat-node/node_modules/**']
   }, function (err) {
     if (err) throw err

@@ -1,11 +1,11 @@
-var fs = require('fs')
-var path = require('path')
-var test = require('tape')
-var rimraf = require('rimraf')
-var tmpDir = require('temporary-directory')
+const fs = require('fs')
+const path = require('path')
+const test = require('tape')
+const rimraf = require('rimraf')
+const tmpDir = require('temporary-directory')
 
-var Dat = require('..')
-var fixtures = path.join(__dirname, 'fixtures')
+const Dat = require('..')
+const fixtures = path.join(__dirname, 'fixtures')
 
 test('misc: clean old test', function (t) {
   rimraf(path.join(fixtures, '.dat'), function () {
@@ -60,7 +60,7 @@ test('misc: open error', function (t) {
 })
 
 test('misc: expose .key', function (t) {
-  var key = Buffer.alloc(32)
+  const key = Buffer.alloc(32)
   Dat(process.cwd(), { key: key, temp: true }, function (err, dat) {
     t.error(err, 'error')
     t.deepEqual(dat.key, key)
@@ -107,13 +107,13 @@ test('misc: expose .writable', function (t) {
 test('misc: expose swarm.connections', function (t) {
   tmpDir(function (err, downDir, cleanup) {
     t.error(err, 'error')
-    var downDat
+    let downDat
     Dat(fixtures, { temp: true }, function (err, shareDat) {
       t.error(err, 'error')
 
       t.doesNotThrow(shareDat.leave, 'leave before join should be noop')
 
-      var network = shareDat.joinNetwork()
+      const network = shareDat.joinNetwork()
       t.equal(network.connections.size, 0, '0 peers')
 
       network.once('connection', function () {
@@ -190,7 +190,7 @@ test('misc: create key and open with different key', function (t) {
 test('misc: make dat with random key and open again', function (t) {
   tmpDir(function (err, downDir, cleanup) {
     t.error(err, 'error')
-    var key = '6161616161616161616161616161616161616161616161616161616161616161'
+    const key = '6161616161616161616161616161616161616161616161616161616161616161'
     Dat(downDir, { key: key }, function (err, dat) {
       t.error(err, 'error')
       t.ok(dat, 'has dat')
@@ -216,7 +216,7 @@ test('misc: close order', function (t) {
         t.ok(dat.importer, 'importer exists')
         dat.joinNetwork({ dht: false }, function (err) {
           t.error(err, 'joined network')
-          var order = []
+          const order = []
           dat.network.on('error', function (err) {
             t.error(err)
           })

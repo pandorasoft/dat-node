@@ -47,14 +47,14 @@ class Dat {
       opts = {}
     }
 
-    var self = this
+    const self = this
     if (!opts && self.options.network) opts = self.options.network // use previous options
     else opts = opts || {}
     cb = cb || noop
 
-    var netOpts = Object.assign({}, {
+    const netOpts = Object.assign({}, {
       stream: function (peer) {
-        var stream = self.archive.replicate({
+        const stream = self.archive.replicate({
           upload: !(opts.upload === false),
           download: !self.writable && opts.download,
           live: !opts.end
@@ -73,7 +73,7 @@ class Dat {
       }
     }, opts)
 
-    var network = self.network = createNetwork(self.archive, netOpts, cb)
+    const network = self.network = createNetwork(self.archive, netOpts, cb)
     self.options.network = netOpts
 
     return network
@@ -111,7 +111,7 @@ class Dat {
     if (typeof src !== 'string') return this.importFiles('', src, opts)
     if (typeof opts === 'function') return this.importFiles(src, {}, opts)
 
-    var self = this
+    const self = this
     src = src && src.length ? src : self.path
     opts = Object.assign({
       indexing: (opts && opts.indexing) || (src === self.path)
@@ -131,7 +131,7 @@ class Dat {
     cb = cb || noop
     if (this._closed) return cb(new Error('Dat is already closed'))
 
-    var self = this
+    const self = this
     self._closed = true
 
     debug('closing network')

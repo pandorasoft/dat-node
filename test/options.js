@@ -1,14 +1,14 @@
-var path = require('path')
-var test = require('tape')
-var rimraf = require('rimraf')
-var encoding = require('dat-encoding')
+const path = require('path')
+const test = require('tape')
+const rimraf = require('rimraf')
+const encoding = require('dat-encoding')
 
-var Dat = require('..')
-var fixtures = path.join(__dirname, 'fixtures')
+const Dat = require('..')
+const fixtures = path.join(__dirname, 'fixtures')
 
 test('opts: string or buffer .key', function (t) {
   rimraf.sync(path.join(process.cwd(), '.dat')) // for failed tests
-  var buf = Buffer.alloc(32)
+  const buf = Buffer.alloc(32)
   Dat(process.cwd(), { key: buf }, function (err, dat) {
     t.error(err, 'no callback error')
     t.deepEqual(dat.archive.key, buf, 'keys match')

@@ -1,16 +1,16 @@
-var fs = require('fs')
-var path = require('path')
-var test = require('tape')
-var rimraf = require('rimraf')
-var tmpDir = require('temporary-directory')
-var helpers = require('./helpers')
+const fs = require('fs')
+const path = require('path')
+const test = require('tape')
+const rimraf = require('rimraf')
+const tmpDir = require('temporary-directory')
+const helpers = require('./helpers')
 
-var Dat = require('..')
+const Dat = require('..')
 
 // os x adds this if you view the fixtures in finder and breaks the file count assertions
 try { fs.unlinkSync(path.join(__dirname, 'fixtures', '.DS_Store')) } catch (e) { /* ignore error */ }
 
-var fixtures = path.join(__dirname, 'fixtures')
+const fixtures = path.join(__dirname, 'fixtures')
 
 test('download: Download with default opts', function (t) {
   shareFixtures(function (err, shareKey, closeShare) {
@@ -26,21 +26,21 @@ test('download: Download with default opts', function (t) {
         t.ok(dat.archive, 'has archive')
         t.notOk(dat.writable, 'archive not writable')
 
-        var stats = dat.trackStats()
-        var network = dat.joinNetwork(function () {
+        const stats = dat.trackStats()
+        const network = dat.joinNetwork(function () {
           t.pass('joinNetwork calls back okay')
         })
         network.once('connection', function () {
           t.pass('connects via network')
         })
-        var archive = dat.archive
+        const archive = dat.archive
         archive.once('content', function () {
           t.pass('gets content')
           archive.content.on('sync', done)
         })
 
         function done () {
-          var st = stats.get()
+          const st = stats.get()
           t.ok(st.version === archive.version, 'stats version correct')
           t.ok(st.downloaded === st.length, 'all blocks downloaded')
           helpers.verifyFixtures(t, archive, function (err) {

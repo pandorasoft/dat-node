@@ -1,13 +1,13 @@
-var countFiles = require('count-files')
+const countFiles = require('count-files')
 
-var fixtureStats = {
+const fixtureStats = {
   files: 3,
   bytes: 1452,
   dirs: 1
 }
 
 module.exports.verifyFixtures = function (t, archive, cb) {
-  var pending = 4
+  let pending = 4
 
   archive.stat('/table.csv', function (err, stat) {
     if (err) return cb(err)

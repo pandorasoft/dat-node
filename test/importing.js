@@ -1,18 +1,18 @@
-var fs = require('fs')
-var path = require('path')
-var test = require('tape')
-var rimraf = require('rimraf')
-var countFiles = require('count-files')
-var tmpDir = require('temporary-directory')
+const fs = require('fs')
+const path = require('path')
+const test = require('tape')
+const rimraf = require('rimraf')
+const countFiles = require('count-files')
+const tmpDir = require('temporary-directory')
 
-var Dat = require('..')
-var fixtures = path.join(__dirname, 'fixtures')
+const Dat = require('..')
+const fixtures = path.join(__dirname, 'fixtures')
 
 test('importing: import two directories at same time', function (t) {
   rimraf.sync(path.join(fixtures, '.dat')) // for previous failed tests
   Dat(fixtures, { temp: true }, function (err, dat) {
     t.error(err, 'error')
-    var pending = 2
+    let pending = 2
     dat.importFiles(function (err) {
       t.error(err, 'error')
       t.pass('ok')
@@ -38,7 +38,7 @@ test('importing: custom ignore extends default (string)', function (t) {
   Dat(fixtures, { temp: true }, function (err, dat) {
     t.error(err)
     dat.importFiles({ ignore: '**/*.js' }, function () {
-      var shouldIgnore = dat.options.importer.ignore
+      const shouldIgnore = dat.options.importer.ignore
       t.ok(shouldIgnore('.dat'), '.dat folder ignored')
       t.ok(shouldIgnore('foo/bar.js'), 'custom ignore works')
       t.notOk(shouldIgnore('foo/bar.txt'), 'txt file gets to come along =)')
@@ -53,7 +53,7 @@ test('importing: custom ignore extends default (array)', function (t) {
   Dat(fixtures, { temp: true }, function (err, dat) {
     t.error(err)
     dat.importFiles({ ignore: ['super_secret_stuff/*', '**/*.txt'] }, function () {
-      var shouldIgnore = dat.options.importer.ignore
+      const shouldIgnore = dat.options.importer.ignore
 
       t.ok(shouldIgnore('.dat'), '.dat still feeling left out =(')
       t.ok(shouldIgnore('password.txt'), 'file ignored')
@@ -70,7 +70,7 @@ test('importing: ignore hidden option turned off', function (t) {
   Dat(fixtures, { temp: true }, function (err, dat) {
     t.error(err)
     dat.importFiles({ ignoreHidden: false }, function () {
-      var shouldIgnore = dat.options.importer.ignore
+      const shouldIgnore = dat.options.importer.ignore
 
       t.ok(shouldIgnore('.dat'), '.dat still feeling left out =(')
       t.notOk(shouldIgnore('.other-hidden'), 'hidden file NOT ignored')
@@ -87,9 +87,9 @@ test('importing: ignore dirs option turned off', function (t) {
   Dat(fixtures, { temp: true }, function (err, dat) {
     t.error(err)
     dat.importFiles({ ignoreDirs: false }, function () {
-      var stream = dat.archive.history()
-      var hasFolder = false
-      var hasRoot = false
+      const stream = dat.archive.history()
+      let hasFolder = false
+      let hasRoot = false
       stream.on('data', function (data) {
         if (data.name === '/folder') hasFolder = true
         if (data.name === '/') hasRoot = true
@@ -109,7 +109,7 @@ test('importing: ignore dirs option turned off', function (t) {
 test('importing: import with options but no callback', function (t) {
   Dat(fixtures, { temp: true }, function (err, dat) {
     t.error(err)
-    var importer = dat.importFiles({ dryRun: true })
+    const importer = dat.importFiles({ dryRun: true })
     importer.on('error', function (err) {
       t.error(err, 'no error')
     })
@@ -126,10 +126,10 @@ test('importing: import with .datignore', function (t) {
   fs.writeFileSync(path.join(fixtures, 'ignoreme.txt'), 'hello world')
   Dat(fixtures, { temp: true }, function (err, dat) {
     t.error(err)
-    var importer = dat.importFiles(function (err) {
+    const importer = dat.importFiles(function (err) {
       t.error(err)
 
-      var shouldIgnore = dat.options.importer.ignore
+      const shouldIgnore = dat.options.importer.ignore
       t.ok(shouldIgnore('.dat'), '.dat ignored')
       dat.close(function () {
         fs.unlinkSync(path.join(fixtures, '.datignore'))
@@ -149,11 +149,11 @@ test('importing: import with opts.useDatIgnore false', function (t) {
   fs.writeFileSync(path.join(fixtures, 'ignoreme.txt'), 'hello world')
   Dat(fixtures, { temp: true }, function (err, dat) {
     t.error(err)
-    var fileImported = false
-    var importer = dat.importFiles({ useDatIgnore: false }, function (err) {
+    let fileImported = false
+    const importer = dat.importFiles({ useDatIgnore: false }, function (err) {
       t.error(err)
 
-      var shouldIgnore = dat.options.importer.ignore
+      const shouldIgnore = dat.options.importer.ignore
       t.ok(shouldIgnore('.dat'), '.dat ignored')
       dat.close(function () {
         if (!fileImported) t.fail('file in .datignore not imported')
@@ -198,7 +198,7 @@ test('importing: import from hidden folder src', function (t) {
 
 test('importing: make sure importing .. fails', function (t) {
   tmpDir(function (_, dir, cleanup) {
-    var illegalDir = path.join(dir, '..', 'tmp')
+    const illegalDir = path.join(dir, '..', 'tmp')
     fs.mkdirSync(illegalDir)
     fs.writeFileSync(path.join(illegalDir, 'hello.txt'), 'hello world')
     Dat(dir, { temp: true }, function (err, dat) {

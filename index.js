@@ -1,11 +1,11 @@
-var assert = require('assert')
-var fs = require('fs')
-var path = require('path')
-var hyperdrive = require('hyperdrive')
-var resolveDatLink = require('dat-link-resolve')
-var debug = require('debug')('dat-node')
-var datStore = require('./lib/storage')
-var Dat = require('./dat')
+const assert = require('assert')
+const fs = require('fs')
+const path = require('path')
+const hyperdrive = require('hyperdrive')
+const resolveDatLink = require('dat-link-resolve')
+const debug = require('debug')('dat-node')
+const datStore = require('./lib/storage')
+const Dat = require('./dat')
 
 module.exports = createDat
 
@@ -29,13 +29,13 @@ function createDat (dirOrStorage, opts, cb) {
   assert.strictEqual(typeof opts, 'object', 'dat-node: opts should be type object')
   assert.strictEqual(typeof cb, 'function', 'dat-node: callback required')
 
-  var archive
-  var key = opts.key
-  var dir = (typeof dirOrStorage === 'string') ? dirOrStorage : null
-  var storage = datStore(dirOrStorage, opts)
-  var createIfMissing = !(opts.createIfMissing === false)
-  var errorIfExists = opts.errorIfExists || false
-  var hasDat = false
+  let archive
+  let key = opts.key
+  const dir = (typeof dirOrStorage === 'string') ? dirOrStorage : null
+  const storage = datStore(dirOrStorage, opts)
+  const createIfMissing = !(opts.createIfMissing === false)
+  const errorIfExists = opts.errorIfExists || false
+  let hasDat = false
   opts = Object.assign({
     // TODO: make sure opts.dir is a directory, not file
     dir: dir,
@@ -51,21 +51,21 @@ function createDat (dirOrStorage, opts, cb) {
    */
   function checkIfExists () {
     // Create after we check for pre-sleep .dat stuff
-    var createAfterValid = (createIfMissing && !errorIfExists)
+    const createAfterValid = (createIfMissing && !errorIfExists)
 
-    var missingError = new Error('Dat storage does not exist.')
+    const missingError = new Error('Dat storage does not exist.')
     missingError.name = 'MissingError'
-    var existsError = new Error('Dat storage already exists.')
+    const existsError = new Error('Dat storage already exists.')
     existsError.name = 'ExistsError'
-    var oldError = new Error('Dat folder contains incompatible metadata. Please remove your metadata (rm -rf .dat).')
+    const oldError = new Error('Dat folder contains incompatible metadata. Please remove your metadata (rm -rf .dat).')
     oldError.name = 'IncompatibleError'
 
     fs.readdir(path.join(opts.dir, '.dat'), function (err, files) {
       // TODO: omg please make this less confusing.
-      var noDat = !!(err || !files.length)
+      const noDat = !!(err || !files.length)
       hasDat = !noDat
-      var validSleep = (files && files.length && files.indexOf('metadata.key') > -1)
-      var badDat = !(noDat || validSleep)
+      const validSleep = (files && files.length && files.indexOf('metadata.key') > -1)
+      const badDat = !(noDat || validSleep)
 
       if ((noDat || validSleep) && createAfterValid) return create()
       else if (badDat) return cb(oldError)
