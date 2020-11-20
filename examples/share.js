@@ -11,7 +11,7 @@ Dat(src, { temp: true }, function (err, dat) {
     console.log('Connected')
   })
   const progress = dat.importFiles(src, {
-    ignore: ['**/dat-node/node_modules/**']
+    ignore: ['**/node_modules/**']
   }, function (err) {
     if (err) throw err
     console.log('Done importing')

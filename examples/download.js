@@ -4,13 +4,17 @@ const mirror = require('mirror-folder')
 const ram = require('random-access-memory')
 const Dat = require('..')
 
-const key = process.argv[2]
-if (!key) {
-  console.error('Run with: node examples/download.js <key>')
-  process.exit(1)
-}
+const key = '17cee6c1520455b893c5bbe3db7fa0f71b8f9810d21f68d394d17983406359de';//process.argv[2]
+// if (!key) {
+//   console.error('Run with: node examples/download.js <key>')
+//   process.exit(1)
+// }
 
 const dest = path.join(__dirname, 'tmp')
+if(fs.existsSync(dest)){
+  fs.rmdirSync(dest);
+}
+
 fs.mkdirSync(dest)
 
 Dat(ram, { key: key, sparse: true }, function (err, dat) {
