@@ -6,8 +6,9 @@ const resolveDatLink = require('dat-link-resolve')
 const debug = require('debug')('dat-node')
 const datStore = require('./lib/storage')
 const Dat = require('./dat')
+const util = require('util');
 
-module.exports = createDat
+module.exports = util.promisify(createDat)
 
 /**
  * Create a Dat instance, archive storage, and ready the archive.
@@ -107,7 +108,6 @@ function createDat (dirOrStorage, opts, cb) {
           archive.resumed = false
         }
         archive.removeListener('error', cb)
-
         cb(null, Dat(archive, opts))
       })
     }

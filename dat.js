@@ -3,7 +3,6 @@ const path = require('path')
 
 const untildify = require('untildify')
 const importFiles = require('./lib/import-files')
-// const Networker = require('@corestore/networker')
 const createNetwork = require('./lib/network')
 const stats = require('./lib/stats')
 const serveHttp = require('./lib/serve')
@@ -44,47 +43,16 @@ class Dat {
   }
 
   async join (opts) {
-
-    var self = this
-    if (!opts && self.options.network) opts = self.options.network // use previous options
-    else opts = opts || {}
-
-    var netOpts = Object.assign({}, {
-      stream: function (peer) {
-        var stream = self.archive.replicate({
-          upload: !(opts.upload === false),
-          download: !self.writable && opts.download,
-          live: !opts.end
-        })
-        stream.on('close', function () {
-          debug('Stream close')
-        })
-        stream.on('error', function (err) {
-          debug('Replication error:', err.message)
-        })
-        stream.on('end', function () {
-          self.downloaded = true
-          debug('Replication stream ended')
-        })
-        return stream
-      }
-    }, opts)
-
-    var network = self.network = await createNetwork(self.archive, netOpts)
-    self.options.network = netOpts
-    
-    return network
+    this.network = await createNetwork(this.archive, opts);
   }
 
-  leave (cb) {
-    if (!cb) cb = noop
-    if (!this || !this.network) return cb()
+  async leave () {
+    if (!this || !this.network) return;
     debug('leaveNetwork()')
-    // TODO: v8 unreplicate ?
-    // this.archive.unreplicate()
-    this.network.leave(this.archive.discoveryKey)
-    this.network.destroy(cb)
-    delete this.network
+    
+    await this.network.configure(this.archive.discoveryKey, {announce:false,lookup:false});
+    await this.network.close();
+    delete this.network;
   }
 
   trackStats (opts) {
@@ -114,50 +82,43 @@ class Dat {
     return this.server
   }
 
-  close (cb) {
+  async close (cb) {
     cb = cb || noop
-    if (this._closed) return cb(new Error('Dat is already closed'))
+    if (this._closed) return;
 
-    var self = this
-    self._closed = true
+    this._closed = true;
 
-    debug('closing network')
-    closeNet(function (err) {
-      if (err) debug('Error while closing network:', err.message)
-      debug('closing closeFileWatch')
-      closeFileWatch(function () {
-        // self.archive.unreplicate()
-        debug('closing archive')
-        self.archive.close(cb)
-      })
-    })
-
-    function closeNet (cb) {
-      if (!self.network) return cb()
-      self.leave(cb)
+    debug('closing network');
+    if(this.network){
+      await this.leave();
     }
 
-    function closeFileWatch (cb) {
-      if (!self.importer) return cb()
-      // Emitting an event, as imported doesn't emit an event on
-      // destroy and there is no other means to see if this was called.
+    debug('closing closeFileWatch');
+    if(this.importer){
       self.importer.emit('destroy')
       self.importer.destroy()
-      delete self.importer
-      process.nextTick(cb)
+      delete this.importer
     }
+
+    await util.promisify(this.archive.close).bind(this.archive)();
   }
 
   async joinNetwork({retry,lookup,announce,waitPeer = false,timeout}){
     const checker = async() => {
       try{
-        
-        if (this.stats.peers && this.stats.peers.total > 0) {
+        const stats = this.stats ? JSON.stringify(this.stats.get()) : {};
+        const peers = this.network.peers.size;
+        const connections = this.network.swarm.connections.size;
+        const swarmPeers = this.network.swarm.peers;
+        const statsPeers = this.stats && this.stats.peers ? this.stats.peers : 0;
+        console.log('peers',peers,'connections',connections,'swarm peers',swarmPeers,'stats peers',statsPeers,'speed','stats',stats);
+        if (peers > 0) {
           return;
         }
   
         try{
-          await util.promisify(this.leave).bind(dat)();
+          /**TODO consider to just leave instead of close the network for performance optimazion */
+          await this.leave();
   
           await new Promise((resolve,reject)=>{
             setTimeout(()=>{

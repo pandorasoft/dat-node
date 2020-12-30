@@ -20,6 +20,7 @@
   "author": "Joe Hand <joe@hand.email>",
   "license": "MIT",
   "dependencies": {
+    "@corestore/networker": "github:pandorasoft/corestore-networker#hyperdrive-9",
     "dat-ignore": "^2.1.2",
     "dat-link-resolve": "^2.3.0",
     "dat-storage": "^1.1.1",
