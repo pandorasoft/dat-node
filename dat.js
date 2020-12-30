@@ -82,8 +82,7 @@ class Dat {
     return this.server
   }
 
-  async close (cb) {
-    cb = cb || noop
+  async close () {
     if (this._closed) return;
 
     this._closed = true;
@@ -95,8 +94,8 @@ class Dat {
 
     debug('closing closeFileWatch');
     if(this.importer){
-      self.importer.emit('destroy')
-      self.importer.destroy()
+      this.importer.emit('destroy')
+      this.importer.destroy()
       delete this.importer
     }
 
