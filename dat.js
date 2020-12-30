@@ -3,10 +3,12 @@ const path = require('path')
 
 const untildify = require('untildify')
 const importFiles = require('./lib/import-files')
+// const Networker = require('@corestore/networker')
 const createNetwork = require('./lib/network')
 const stats = require('./lib/stats')
 const serveHttp = require('./lib/serve')
 const debug = require('debug')('dat-node')
+const util = require('util');
 
 module.exports = (...args) => new Dat(...args)
 
@@ -41,20 +43,15 @@ class Dat {
     return this.archive.version
   }
 
-  join (opts, cb) {
-    if (typeof opts === 'function') {
-      cb = opts
-      opts = {}
-    }
+  async join (opts) {
 
-    const self = this
+    var self = this
     if (!opts && self.options.network) opts = self.options.network // use previous options
     else opts = opts || {}
-    cb = cb || noop
 
-    const netOpts = Object.assign({}, {
+    var netOpts = Object.assign({}, {
       stream: function (peer) {
-        const stream = self.archive.replicate({
+        var stream = self.archive.replicate({
           upload: !(opts.upload === false),
           download: !self.writable && opts.download,
           live: !opts.end
@@ -73,9 +70,9 @@ class Dat {
       }
     }, opts)
 
-    const network = self.network = createNetwork(self.archive, netOpts, cb)
+    var network = self.network = await createNetwork(self.archive, netOpts)
     self.options.network = netOpts
-
+    
     return network
   }
 
@@ -88,16 +85,6 @@ class Dat {
     this.network.leave(this.archive.discoveryKey)
     this.network.destroy(cb)
     delete this.network
-  }
-
-  pause () {
-    debug('pause()')
-    this.leave()
-  }
-
-  resume () {
-    debug('resume()')
-    this.joinNetwork()
   }
 
   trackStats (opts) {
@@ -131,7 +118,7 @@ class Dat {
     cb = cb || noop
     if (this._closed) return cb(new Error('Dat is already closed'))
 
-    const self = this
+    var self = this
     self._closed = true
 
     debug('closing network')
@@ -160,8 +147,75 @@ class Dat {
       process.nextTick(cb)
     }
   }
+
+  async joinNetwork({retry,lookup,announce,waitPeer = false,timeout}){
+    const checker = async() => {
+      try{
+        
+        if (this.stats.peers && this.stats.peers.total > 0) {
+          return;
+        }
+  
+        try{
+          await util.promisify(this.leave).bind(dat)();
+  
+          await new Promise((resolve,reject)=>{
+            setTimeout(()=>{
+              return resolve();
+            },1000);
+          });
+        }catch(err){
+          throw new Error(`NETWORK_LEAVE_ERROR. Details:${err.message}`);
+        }
+        
+        throw new Error('NETWORK_JOIN_ERROR');
+      }catch(err){
+        throw err;
+      }
+    }
+  
+    const run = () => {
+      return new Promise(async (resolve, reject) => {
+        try {
+          await this.join({lookup:lookup,upload:announce});
+          if(!waitPeer){
+            return resolve();
+          }
+          /**jika server, maka langsung return */
+          /**jika client, maka bisa nunggu sampai connect to peer */
+  
+          setTimeout(async()=>{
+            try{
+              console.log('checker');
+              await checker();
+              return resolve();
+            }catch(err){
+              return reject(err);
+            }
+          }, timeout)
+        } catch (err) {
+          return reject(err)
+        }
+      })
+    }
+  
+    let stop = false
+    let innerRetry = 0
+    do {
+      try {
+        await run()
+        stop = true
+      } catch (err) {
+        if (innerRetry > retry) {
+          throw err;
+        } else {
+          innerRetry++
+        }
+      }
+    } while (!stop)
+  }
 }
-Dat.prototype.joinNetwork = Dat.prototype.join
+
 Dat.prototype.leaveNetwork = Dat.prototype.leave
 
 function noop () { }
