@@ -42,8 +42,25 @@ class Dat {
     return this.archive.version
   }
 
-  async join (opts) {
-    this.network = await createNetwork(this.archive, opts);
+  async join (opts,swarmOpts = {},replicateOpts = {}) {
+    if(this.network){
+      await this.leave();
+    }
+
+    opts = Object.assign({
+      announce:true,
+      lookup:true,
+      flush:true
+    },opts);
+
+    const _replicationOpts = Object.assign({
+      download:true,
+      upload:true,
+      live:true
+    },replicateOpts);
+
+    this.network = await createNetwork(this.archive, swarmOpts,_replicationOpts);
+    await this.network.configure(this.archive.discoveryKey, opts);
   }
 
   async leave () {
@@ -103,16 +120,45 @@ class Dat {
     await util.promisify(this.archive.close).bind(this.archive)();
   }
 
-  async joinNetwork({retry,lookup,announce,waitPeer = false,timeout}){
+  test(){
+    if(this.network){
+      const peers = this.network.peers.size;
+      const connections = this.network.swarm.connections.size;
+      const swarmPeers = this.network.swarm.peers;
+      console.log('network','peers',peers,'connections',connections,'swarm peers',swarmPeers);
+    }else{
+      console.log('joinNetwork disabled')
+    }
+
+    if(this.stats){
+      const peers = this.stats.peers;
+      const speed = JSON.stringify(this.stats.get());
+      console.log('stats','peers',peers,'speed',speed);  
+    }else{
+      console.log('stats disabled');
+    }
+  }
+
+  /**must already join network by calling joinNetwork. remember to set download:false when joining network to prevent auto update */
+  async isNewUpdate(opts,swarmOpts = {}){
+    const {retry,timeout} = opts;
+    try{
+      await this.joinNetwork({lookup:true,announce:false,retry:retry,timeout:timeout,waitPeer:true},swarmOpts,{download:false});
+      await util.promisify(this.archive.metadata.update).bind(this.archive.metadata)({ ifAvailable: true,minLength:this.archive.version+1 });
+      await this.leave()
+      return true;
+    }catch(err){
+      return false;
+    }
+  }
+
+  async joinNetwork(opts = {},swarmOpts = {},replicateOpts = {}){
+    const {retry,lookup,announce,waitPeer = false,timeout} = opts;
+
     const checker = async() => {
       try{
-        const stats = this.stats ? JSON.stringify(this.stats.get()) : {};
-        const peers = this.network.peers.size;
-        const connections = this.network.swarm.connections.size;
-        const swarmPeers = this.network.swarm.peers;
-        const statsPeers = this.stats && this.stats.peers ? this.stats.peers : 0;
-        console.log('peers',peers,'connections',connections,'swarm peers',swarmPeers,'stats peers',statsPeers,'speed','stats',stats);
-        if (peers > 0) {
+        this.test();
+        if (this.network.peers.size > 0) {
           return;
         }
   
@@ -138,16 +184,14 @@ class Dat {
     const run = () => {
       return new Promise(async (resolve, reject) => {
         try {
-          await this.join({lookup:lookup,upload:announce});
+          await this.join({lookup:lookup,upload:announce},swarmOpts,replicateOpts);
           if(!waitPeer){
             return resolve();
           }
-          /**jika server, maka langsung return */
-          /**jika client, maka bisa nunggu sampai connect to peer */
   
           setTimeout(async()=>{
             try{
-              console.log('checker');
+              console.log('waitPeers checker');
               await checker();
               return resolve();
             }catch(err){
