@@ -116,6 +116,15 @@ class Dat {
       delete this.importer
     }
 
+    /**bug from hyperdrive, when close it doesn't close this storage causing problem when fs.emptyDir Permission Denied */
+    if(this.archive._latestStorage){
+      try{
+        await util.promisify(this.archive._latestStorage.destroy).bind(this.archive._latestStorage)();
+      }catch(err){
+        console.error('maybe not exists yet: bug hyperdrive',err);
+      }
+    }
+
     await util.promisify(this.archive.close).bind(this.archive)();
   }
 
@@ -149,6 +158,79 @@ class Dat {
     }catch(err){
       return false;
     }
+  }
+
+  async download(entries,{thread = 0,dispatch}){
+    try{
+
+      let totalDownloaded = 0;
+      let totalFailed = 0;
+      let errors = [];
+      let queue = [];
+      let index = 0;
+      if(thread === 0){
+        thread = entries.length;
+      }
+
+      const updateStatus = (opts)=>{
+        dispatch && dispatch(`${totalDownloaded},${totalFailed} of ${entries.length}`);
+      }
+
+      updateStatus();
+      for(let entry of entries){
+        queue.push(this._download(entry).then(()=>{
+          totalDownloaded++;
+          updateStatus();
+        }).catch(err=>{
+          totalFailed++;
+          updateStatus();
+          errors.push({file:entry,message:err.message});
+        }));
+        index++;
+        if(index % thread == 0){
+          await Promise.all(queue);
+          queue = [];
+        }
+      }
+
+      if(queue.length){
+        await Promise.all(queue);
+        queue = [];
+      }
+
+      if(errors.length){
+        return {
+          totalDownloaded:totalDownloaded,
+          errors:errors,
+          totalFailed:totalFailed
+        }
+      }
+
+      return true;
+    }catch(err){
+      throw err;
+    }
+  }
+
+  async _download(entry){
+    try{
+        const stat = await util.promisify(this.archive.stat).bind(this.archive)(entry);
+        if (stat.isFile()){
+            await this._downloadFile(entry, stat)
+        }
+    }catch(err){
+        throw err;
+    }
+  }
+
+  async _downloadFile(entry, stat){
+    const start = stat.offset
+    const end = stat.offset + stat.blocks
+    if (start === 0 && end === 0) return
+    
+    console.log('downloading file', entry, start, end);
+    await util.promisify(this.archive.content.download).bind(this.archive.content)({ start, end });
+    console.log('success downloading file', entry, start, end);
   }
 
   async joinNetwork(opts = {},swarmOpts = {},replicateOpts = {}){

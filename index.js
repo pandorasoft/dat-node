@@ -40,7 +40,8 @@ function createDat (dirOrStorage, opts, cb) {
   opts = Object.assign({
     // TODO: make sure opts.dir is a directory, not file
     dir: dir,
-    latest: true
+    latest: true,
+    indexing:false
   }, opts)
 
   if (!opts.dir) return create() // TODO: check other storage

@@ -5,9 +5,9 @@ const ram = require('random-access-memory')
 const Dat = require('..')
 const util = require('util');
 
-const key = "b65a1e9327fdfcb8751e4ff520785ce6b9b59da3f06f1a8f757a561f2b1721eb";//process.argv[2]
+const key = "03bb7e223a1da6349acab366dcfc1fe83b8ed5c7c37cf86bfdcb17a1bedd8eed";//process.argv[2]
 
-const dest = path.join(__dirname, 'tmp1')
+const dest = path.join(__dirname, 'tmp2')
 if(!fs.existsSync(dest)){
   fs.mkdirSync(dest)
 }
