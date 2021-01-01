@@ -217,6 +217,10 @@ class Dat {
         const stat = await util.promisify(this.archive.stat).bind(this.archive)(entry);
         if (stat.isFile()){
             await this._downloadFile(entry, stat)
+        }else if(stat.isDirectory()){
+          console.log('is directory');
+        }else{
+          console.log(stat);
         }
     }catch(err){
         throw err;
@@ -226,7 +230,10 @@ class Dat {
   async _downloadFile(entry, stat){
     const start = stat.offset
     const end = stat.offset + stat.blocks
-    if (start === 0 && end === 0) return
+    if (start === 0 && end === 0){
+      console.log('empty');
+      return;
+    }
     
     console.log('downloading file', entry, start, end);
     await util.promisify(this.archive.content.download).bind(this.archive.content)({ start, end });
@@ -236,30 +243,19 @@ class Dat {
   async joinNetwork(opts = {},swarmOpts = {},replicateOpts = {}){
     const {retry,lookup,announce,waitPeer = false,timeout} = opts;
 
-    const checker = async() => {
-      try{
-        this.test();
-        if (this.network.peers.size > 0) {
-          return;
-        }
-  
-        try{
-          /**TODO consider to just leave instead of close the network for performance optimazion */
-          await this.leave();
-  
-          await new Promise((resolve,reject)=>{
-            setTimeout(()=>{
-              return resolve();
-            },1000);
-          });
-        }catch(err){
-          throw new Error(`NETWORK_LEAVE_ERROR. Details:${err.message}`);
-        }
-        
-        throw new Error('NETWORK_JOIN_ERROR');
-      }catch(err){
-        throw err;
-      }
+    const checker = () => {
+      return new Promise(async(resolve,reject)=>{
+          setTimeout(() => {
+            try{
+              this.test();
+              if (this.network.peers.size > 0) {
+                return resolve();
+              }
+            }catch(err){
+              return reject(err);
+            }
+          }, 1000);
+      });
     }
   
     const run = () => {
@@ -269,18 +265,27 @@ class Dat {
           if(!waitPeer){
             return resolve();
           }
-  
-          setTimeout(async()=>{
+
+          try{
+            await Promise.race([
+              checker,
+              new Promise((resolve,reject)=>{
+                setTimeout(()=>{
+                  return reject(new Error('NETWORK_CONNECT_TIMEOUT'))
+                }, timeout)
+              })
+            ]);
+
+            return resolve();
+          }catch(err){
             try{
-              console.log('waitPeers checker');
-              await checker();
-              return resolve();
-            }catch(err){
-              return reject(err);
-            }
-          }, timeout)
-        } catch (err) {
-          return reject(err)
+              await this.leave();
+            }catch(err2){console.log('found bug leave network')}//no need to do anything
+
+            throw err;
+          }
+        }catch(err){
+          return reject(err);
         }
       })
     }

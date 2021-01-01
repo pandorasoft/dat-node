@@ -17,12 +17,12 @@ if(!fs.existsSync(dest)){
 /**download sparse:true */
 (async()=>{
 
-  const dat = await Dat(dest, { key: key, sparse: false });
+  const dat = await Dat(dest, { key: key, sparse: true });
   dat.trackStats();
   
   setInterval(()=>{
     dat.test();
 },1000);
   await dat.joinNetwork({lookup:true,announce:true,retry:5,timeout:60000,waitPeer:true},{},{download:true,live:false});
-  
+  console.log('joined');
 })();

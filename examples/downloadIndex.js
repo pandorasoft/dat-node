@@ -7,9 +7,10 @@ const util = require('util');
 const fsExtra = require('fs-extra');
 
 const dft = require('diff-file-tree')
-const key = "c037b8f3a93cff2f39a32de252ad321dd42cb8d7d0bd191b0372e78534fe3601";//process.argv[2]
+// const key = "c037b8f3a93cff2f39a32de252ad321dd42cb8d7d0bd191b0372e78534fe3601";//process.argv[2]
+const key = "2aaf82d53013d7205454aecd2dc02dc75488c58672bc5a9b71c6d895de91fd68";
 
-const dest = path.join(__dirname, 'tmp2')
+const dest = path.join(__dirname, 'tmp3')
 if(!fs.existsSync(dest)){
   fs.mkdirSync(dest)
 }
@@ -21,39 +22,28 @@ if(!fs.existsSync(dest)){
   //3. done kalo sudah selesai download
 
   const dat = await Dat(dest, { key: key, sparse: true });
-  const diff = await dft.diff(dest,{fs:dat.archive,path:'/'},{
-    compareContent:true,
-    filter:(path)=>path.includes('\\.dat'),
-    shallow:false
-  });
+  // let diff;
+  // try{
+  //   diff = await dft.diff(dest,{fs:dat.archive,path:'/'},{
+  //     compareContent:true,
+  //     filter:(path)=>path.includes('\\.dat'),
+  //     shallow:false
+  //   });
+  // }catch(err){
+  //   console.log('err',err);
+  // }
   
   // console.log('sebelum filter',diff);
-  const selective = diff.filter(val=>!['add'].includes(val.change)).filter(val=>val.type == 'file').map((val)=>val.path);
+  // const selective = diff.filter(val=>!['add'].includes(val.change)).filter(val=>val.type == 'file').map((val)=>val.path);
   // console.log('setelah filter',selective);
 
-  // const selective =  [
-  //   '\\ndp48-web - Copy (2).exe',
-  //   '\\ndp48-web - Copy.exe',
-  //   '\\ndp48-web.exe',
-  //   '\\visualcppbuildtools_full.exe',
-  //   '\\test\\test.txt',
-  //   '\\test\\ndp48-web - Copy.exe',
-  //   '\\test\\ndp48-web.exe'
-  // ];
+  // return;
+  const selective =  [
+    '\\.dat'
+  ];
   
-
-  await dat.joinNetwork({lookup:true,announce:true,retry:5,timeout:15000,waitPeer:false},{},{download:true});
+  await dat.joinNetwork({lookup:true,announce:true,retry:5,timeout:60000,waitPeer:true},{},{download:true});
+  console.log('joined');
   const resp = await dat.download(selective,{dispatch:console.log});
-
-  await dat.close();
-  setInterval(async()=>{
-    try{
-      console.log('coba hapus');
-      await fsExtra.emptyDir(dest);
-      console.log('success');
-      process.exit(0);
-    }catch(err){
-      console.log('gagal hapus');
-    }
-  },10000);
+  console.log('done',resp);
 })();
