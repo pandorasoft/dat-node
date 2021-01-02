@@ -44,6 +44,7 @@ class Dat {
 
   async join (opts,swarmOpts = {},replicateOpts = {}) {
     if(this.network){
+      console.log('this.network exists - leave');
       await this.leave();
     }
 
@@ -121,7 +122,7 @@ class Dat {
       try{
         await util.promisify(this.archive._latestStorage.destroy).bind(this.archive._latestStorage)();
       }catch(err){
-        console.error('maybe not exists yet: bug hyperdrive',err);
+        console.warn('bug hyperdrive',err);
       }
     }
 
@@ -244,17 +245,20 @@ class Dat {
     const {retry,lookup,announce,waitPeer = false,timeout} = opts;
 
     const checker = () => {
-      return new Promise(async(resolve,reject)=>{
-          setTimeout(() => {
+      return new Promise((resolve,reject)=>{
+        let checkerID = 0;
+        checkerID = setInterval(() => {
             try{
               this.test();
               if (this.network.peers.size > 0) {
+                clearInterval(checkerID);
                 return resolve();
               }
             }catch(err){
+              clearInterval(checkerID);
               return reject(err);
             }
-          }, 1000);
+        }, 1000);
       });
     }
   
@@ -268,7 +272,7 @@ class Dat {
 
           try{
             await Promise.race([
-              checker,
+              checker(),
               new Promise((resolve,reject)=>{
                 setTimeout(()=>{
                   return reject(new Error('NETWORK_CONNECT_TIMEOUT'))
@@ -276,9 +280,11 @@ class Dat {
               })
             ]);
 
+            console.log('joined');
             return resolve();
           }catch(err){
             try{
+              console.log('leave')
               await this.leave();
             }catch(err2){console.log('found bug leave network')}//no need to do anything
 
