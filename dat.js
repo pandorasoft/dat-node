@@ -161,9 +161,9 @@ class Dat {
     }
   }
 
-  async download(entries,{thread = 0,dispatch}){
+  async download(entries,{thread = 0,dispatch,ignore = true}){
     try{
-
+      // "/PointBlankInstall - Copy.exe could not be found"
       let totalDownloaded = 0;
       let totalFailed = 0;
       let errors = [];
@@ -183,9 +183,28 @@ class Dat {
           totalDownloaded++;
           updateStatus();
         }).catch(err=>{
-          totalFailed++;
-          updateStatus();
-          errors.push({file:entry,message:err.message});
+          let isError = true;
+          if(ignore !== false){
+            if(ignore === true){
+              if(err.message.includes("could not be found")){
+                isError = false;
+                totalDownloaded++;
+                updateStatus();
+              }
+            }else{
+              if(ignore(err.message)){
+                isError = false;
+                totalDownloaded++;
+                updateStatus();
+              }
+            }
+          }
+
+          if(isError){
+            totalFailed++;
+            updateStatus();
+            errors.push({file:entry,message:err.message});
+          }
         }));
         index++;
         if(index % thread == 0){
@@ -242,14 +261,19 @@ class Dat {
   }
 
   async joinNetwork(opts = {},swarmOpts = {},replicateOpts = {}){
-    const {retry,lookup,announce,waitPeer = false,timeout} = opts;
+    const {retry,lookup,announce,waitPeer = false,timeout,log=true} = opts;
 
+    let checkerID = 0;
     const checker = () => {
       return new Promise((resolve,reject)=>{
-        let checkerID = 0;
         checkerID = setInterval(() => {
             try{
-              this.test();
+              if(this.archive._closed){
+                log && console.log('clear interval checker id');
+                clearInterval(checkerID);
+                return reject(new Error('Stopped'));
+              }
+              log && this.test();
               if (this.network.peers.size > 0) {
                 clearInterval(checkerID);
                 return resolve();
@@ -258,13 +282,14 @@ class Dat {
               clearInterval(checkerID);
               return reject(err);
             }
-        }, 1000);
+        }, 2500);
       });
     }
   
     const run = () => {
       return new Promise(async (resolve, reject) => {
         try {
+          log && console.log('joining');
           await this.join({lookup:lookup,upload:announce},swarmOpts,replicateOpts);
           if(!waitPeer){
             return resolve();
@@ -280,17 +305,22 @@ class Dat {
               })
             ]);
 
-            console.log('joined');
+            log && console.log('joined');
+            clearInterval(checkerID);
             return resolve();
           }catch(err){
+            clearInterval(checkerID);
             try{
-              console.log('leave')
-              await this.leave();
-            }catch(err2){console.log('found bug leave network')}//no need to do anything
+              log && console.log('leave');
+              if(!this.archive._closed){
+                await this.leave();
+              }
+            }catch(err2){console.log('found bug leave network',err2)}//no need to do anything
 
             throw err;
           }
         }catch(err){
+          clearInterval(checkerID);
           return reject(err);
         }
       })
@@ -300,9 +330,13 @@ class Dat {
     let innerRetry = 0
     do {
       try {
-        await run()
-        stop = true
+        await run();
+        stop = true;
       } catch (err) {
+        if(this.archive._closed){
+          log && console.log('stopped');
+          stop = true;
+        }
         if (innerRetry > retry) {
           throw err;
         } else {
