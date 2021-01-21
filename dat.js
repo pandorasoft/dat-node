@@ -6,7 +6,7 @@ const importFiles = require('./lib/import-files')
 const createNetwork = require('./lib/network')
 const stats = require('./lib/stats')
 const serveHttp = require('./lib/serve')
-const debug = require('debug')('dat-node')
+const debug = require('debug')('arsel:Dat')
 const util = require('util');
 
 module.exports = (...args) => new Dat(...args)
@@ -44,7 +44,7 @@ class Dat {
 
   async join (opts,swarmOpts = {},replicateOpts = {}) {
     if(this.network){
-      console.log('this.network exists - leave');
+      debug('this.network exists - leave');
       await this.leave();
     }
 
@@ -122,7 +122,7 @@ class Dat {
       try{
         await util.promisify(this.archive._latestStorage.destroy).bind(this.archive._latestStorage)();
       }catch(err){
-        console.warn('bug hyperdrive',err);
+        debug('bug hyperdrive',err);
       }
     }
 
@@ -134,17 +134,17 @@ class Dat {
       const peers = this.network.peers.size;
       const connections = this.network.swarm.connections.size;
       const swarmPeers = this.network.swarm.peers;
-      console.log('network','peers',peers,'connections',connections,'swarm peers',swarmPeers);
+      debug('network','peers',peers,'connections',connections,'swarm peers',swarmPeers);
     }else{
-      console.log('joinNetwork disabled')
+      debug('joinNetwork disabled')
     }
 
     if(this.stats){
       const peers = this.stats.peers;
       const speed = JSON.stringify(this.stats.get());
-      console.log('stats','peers',peers,'speed',speed);  
+      debug('stats','peers',peers,'speed',speed);  
     }else{
-      console.log('stats disabled');
+      debug('stats disabled');
     }
   }
 
@@ -238,9 +238,9 @@ class Dat {
         if (stat.isFile()){
             await this._downloadFile(entry, stat)
         }else if(stat.isDirectory()){
-          console.log('is directory');
+          debug('is directory');
         }else{
-          console.log(stat);
+          debug(stat);
         }
     }catch(err){
         throw err;
@@ -251,17 +251,17 @@ class Dat {
     const start = stat.offset
     const end = stat.offset + stat.blocks
     if (start === 0 && end === 0){
-      console.log('empty');
+      debug('empty');
       return;
     }
     
-    console.log('downloading file', entry, start, end);
+    debug('downloading file', entry, start, end);
     await util.promisify(this.archive.content.download).bind(this.archive.content)({ start, end });
-    console.log('success downloading file', entry, start, end);
+    debug('success downloading file', entry, start, end);
   }
 
   async joinNetwork(opts = {},swarmOpts = {},replicateOpts = {}){
-    const {retry,lookup,announce,waitPeer = false,timeout,log=true} = opts;
+    const {retry,lookup,announce,waitPeer = false,timeout,log=false} = opts;
 
     let checkerID = 0;
     const checker = () => {
@@ -269,7 +269,7 @@ class Dat {
         checkerID = setInterval(() => {
             try{
               if(this.archive._closed){
-                log && console.log('clear interval checker id');
+                log && debug('clear interval checker id');
                 clearInterval(checkerID);
                 return reject(new Error('Stopped'));
               }
@@ -289,7 +289,7 @@ class Dat {
     const run = () => {
       return new Promise(async (resolve, reject) => {
         try {
-          log && console.log('joining');
+          log && debug('joining');
           await this.join({lookup:lookup,upload:announce},swarmOpts,replicateOpts);
           if(!waitPeer){
             return resolve();
@@ -305,17 +305,17 @@ class Dat {
               })
             ]);
 
-            log && console.log('joined');
+            log && debug('joined');
             clearInterval(checkerID);
             return resolve();
           }catch(err){
             clearInterval(checkerID);
             try{
-              log && console.log('leave');
+              log && debug('leave');
               if(!this.archive._closed){
                 await this.leave();
               }
-            }catch(err2){console.log('found bug leave network',err2)}//no need to do anything
+            }catch(err2){debug('found bug leave network',err2)}//no need to do anything
 
             throw err;
           }
@@ -334,7 +334,7 @@ class Dat {
         stop = true;
       } catch (err) {
         if(this.archive._closed){
-          log && console.log('stopped');
+          log && debug('stopped');
           stop = true;
         }
         if (innerRetry > retry) {
