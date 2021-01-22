@@ -23,7 +23,7 @@
     "@corestore/networker": "github:pandorasoft/corestore-networker#hyperdrive-9",
     "dat-ignore": "^2.1.2",
     "dat-link-resolve": "^2.3.0",
-    "dat-storage": "^1.1.1",
+    "dat-storage": "github:pandorasoft/dat-storage#windows",
     "debug": "^4.1.0",
     "diff-file-tree": "^2.5.1",
     "fs-extra": "^9.0.1",
